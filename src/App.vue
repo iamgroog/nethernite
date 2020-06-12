@@ -3,41 +3,37 @@
 v-app(
   dark
 )
+
+  //- Header
   v-app-bar(
     app
     :height="102"
   )
     v-container.ma-auto.pa-2.pb-0(fluid)
-      v-text-field(
-        v-model="search"
-        messages="Найдено n разультатов за m миллисекунд"
-        label="Поиск"
-        outlined
-        clearable
-      )
+      v-search-input
 
+  //- Body
   v-main
     v-container(fluid)
       router-view
 
+  //- Footer
   v-footer(app) footer
 
 </template>
 
 <script>
 
-export default {
-  name: 'App',
+import VSearchInput from "./components/VSearchInput/VSearchInput"
 
+export default {
+  name: "App",
   components: {
+    VSearchInput
   },
   data(){
     return {
-      search: ''
     }
-  },
-  created () {
-    // this.$vuetify.theme.dark = true
   }
 }
 </script>
