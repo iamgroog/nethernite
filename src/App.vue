@@ -10,12 +10,11 @@ v-app(
     v-container.ma-auto.pa-2.pb-0(fluid)
       v-text-field(
         v-model="search"
-        persistent-hint
+        messages="Найдено n разультатов за m миллисекунд"
         label="Поиск"
         outlined
         clearable
       )
-        template(#message) Найдено n разультатов за m миллисекунд
 
   v-main
     v-container(fluid)
