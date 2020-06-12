@@ -1,60 +1,44 @@
-<template>
-  <v-app>
-    <v-app-bar
-      app
-      color="primary"
-      dark
-    >
-      <div class="d-flex align-center">
-        <v-img
-          alt="Vuetify Logo"
-          class="shrink mr-2"
-          contain
-          src="https://cdn.vuetifyjs.com/images/logos/vuetify-logo-dark.png"
-          transition="scale-transition"
-          width="40"
-        />
+<template lang="pug">
 
-        <v-img
-          alt="Vuetify Name"
-          class="shrink mt-1 hidden-sm-and-down"
-          contain
-          min-width="100"
-          src="https://cdn.vuetifyjs.com/images/logos/vuetify-name-dark.png"
-          width="100"
-        />
-      </div>
+v-app(
+  dark
+)
+  v-app-bar(
+    app
+    :height="102"
+  )
+    v-container.ma-auto.pa-2.pb-0(fluid)
+      v-text-field(
+        v-model="search"
+        persistent-hint
+        label="Поиск"
+        outlined
+        clearable
+      )
+        template(#message) Найдено n разультатов за m миллисекунд
 
-      <v-spacer></v-spacer>
+  v-main
+    v-container(fluid)
+      router-view
 
-      <v-btn
-        href="https://github.com/vuetifyjs/vuetify/releases/latest"
-        target="_blank"
-        text
-      >
-        <span class="mr-2">Latest Release</span>
-        <v-icon>mdi-open-in-new</v-icon>
-      </v-btn>
-    </v-app-bar>
+  v-footer(app) footer
 
-    <v-content>
-      <HelloWorld/>
-    </v-content>
-  </v-app>
 </template>
 
 <script>
-import HelloWorld from './components/HelloWorld'
 
 export default {
   name: 'App',
 
   components: {
-    HelloWorld
   },
-
-  data: () => ({
-    //
-  })
+  data(){
+    return {
+      search: ''
+    }
+  },
+  created () {
+    // this.$vuetify.theme.dark = true
+  }
 }
 </script>
