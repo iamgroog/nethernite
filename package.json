@@ -51,8 +51,10 @@
       "parser": "babel-eslint"
     },
     "rules": {
-      "space-before-blocks": 0,
-      "space-before-function-paren": 0
+      "space-before-blocks": "off",
+      "space-before-function-paren": "off",
+      "quotes": ["warn", "double"],
+      "semi": "off"
     }
   },
   "browserslist": [
