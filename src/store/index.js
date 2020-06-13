@@ -103,9 +103,9 @@ export default new Vuex.Store({
 
   actions: {
     /**
-     * Подговорить запрос для получения пакетов
+     * Подготоаить запрос для получения пакетов
      */
-    searchPackages({ state, commit, dispatch, getters }, { query, page = 1 }){
+    async searchPackages({ state, commit, dispatch, getters }, { query, page = 1 }){
       const q = query;
       const from = Math.max((page - 1) * state.settings.pageSize, 0);
       const size = state.settings.pageSize;
@@ -119,13 +119,13 @@ export default new Vuex.Store({
 
         /* Если каких-то нет - получить */
         if (emptySeries.length) {
-          emptySeries.forEach(function(series) {
-            dispatch("searchPackagesInNPM", { q, from: series.start, size: series.length })
+          emptySeries.forEach(async function(series) {
+            await dispatch("searchPackagesInNPM", { q, from: series.start, size: series.length })
           })
         }
       } else {
       /* Если нет, получить из NPM */
-        dispatch("searchPackagesInNPM", request)
+        await dispatch("searchPackagesInNPM", request)
       }
 
       /* Сохранить запрос */
@@ -137,11 +137,11 @@ export default new Vuex.Store({
      * Найти пакеты в NPM
      * @param {Object} VuexInstance
      * @param {Object} Payload
-     * @param {Object} Payload.q Текст запроса
+     * @param {String} Payload.q Текст запроса
      * @param {Number} Payload.from Позиция, с которой будут возвращены релультаты
      * @param {Number} Payload.size Количество резльтатов, которое будет возвращено
      */
-    searchPackagesInNPM({ state, commit, dispatch }, { q, from = 0, size = 0 }){
+    async searchPackagesInNPM({ state, commit, dispatch }, { q, from = 0, size = 0 }){
       const request = {
         q,
         from,
@@ -150,7 +150,7 @@ export default new Vuex.Store({
 
       commit("SET_PENDING_RESPONSE", true);
 
-      NPMApiRequest.get("/search", { params: request })
+      await NPMApiRequest.get("/search", { params: request })
         /* Успех */
         .then(function (response) {
           if (response.status === 200) {
