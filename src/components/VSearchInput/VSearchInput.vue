@@ -3,6 +3,7 @@
     v-text-field.the-search-input(
       v-model.trim="searchQuery"
       :messages="inputHint"
+      :loading="isPendingResponse"
       label="Поиск"
       outlined
       clearable
@@ -14,36 +15,62 @@
 // TODO Валидация (только текст)
 // TODO Экранирование
 // TODO Не отправлять пустые значения
+// TODO Показывать кнопку повоторить в подсказке при неудаче
+// TODO Логика через геттер
+// TODO Уменьшать поле ввода, если не в фокусе
 import { mapState, mapActions } from "vuex"
+import filterSearchQuery from "@/script/filterSearchQuery"
 
 export default {
   name: "the-search-input",
   components: {
   },
+  data(){
+    return {
+    }
+  },
   computed: {
     ...mapState([
       "query",
-      "totalPackagesFound"
+      "page",
+      "totalFound",
+      "isPendingResponse"
     ]),
     searchQuery: {
       get(){
         return this.query
       },
+
       set(query){
-        this.searchPackages(query)
+        /* Передача запроса и номера страницы в роутер, чтобы сохранять позицию в адресной строке, */
+        /* что обеспечивает возможность передчи ссылки на результаты поиска */
+        this.$router.push({
+          name: "TheSearchResults",
+          params: {
+            query: filterSearchQuery(query),
+            page: 1
+          }
+        });
+
+        this.searchPackages({ query });
       }
     },
+
     inputHint(){
-      if (!this.totalPackagesFound) {
+      if (!this.totalFound) {
         return "Ничего не найдено"
       }
-      return `Найдено ${this.totalPackagesFound} разультатов`
+      return `Найдено ${this.totalFound} разультатов`
     }
   },
   methods: {
     ...mapActions([
       "searchPackages"
     ])
+  },
+  created(){
+    const query = this.$router.history.current.params.query;
+    this.searchPackages({ q: query });
   }
 }
 </script>

@@ -1,14 +1,15 @@
-import Vue from 'vue'
-import VueRouter from 'vue-router'
-import ThePackageList from '../views/ThePackageList/ThePackageList'
+import Vue from "vue"
+import VueRouter from "vue-router"
+import TheSearchResults from "../views/TheSearchResults/TheSearchResults"
 
 Vue.use(VueRouter)
 
 const routes = [
   {
-    path: '/',
-    name: 'ThePackageList',
-    component: ThePackageList
+    path: "/:query/:page",
+    name: "TheSearchResults",
+    component: TheSearchResults,
+    props: true
   }
 ]
 
