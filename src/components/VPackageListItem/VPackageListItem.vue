@@ -5,8 +5,7 @@
     template(v-if="package")
       div.col-6 {{package.npm.package.name}}
       div.col-4 {{package.npm.package.author && package.npm.package.author.name}}
-      div.col-1 v{{package.npm.package.version}}
-      div.col-1 {{!!package.jsdelivr}}
+      div.col-2 v{{package.npm.package.version}}
 
     template(v-else)
       div.col-12 Обновить
