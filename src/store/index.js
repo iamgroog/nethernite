@@ -2,13 +2,11 @@ import Vue from "vue"
 import Vuex from "vuex"
 
 import contsructAxiosInstance from "./../script/contsructAxiosInstance";
-import getEmptySeries from "./../script/getEmptySeries";
 
 Vue.use(Vuex)
 
-// TODO Конструктор для пакета
-
 const NPMApiRequest = contsructAxiosInstance({ baseURL: "https://api.npms.io/v2", url: "/saerch" });
+const JsdelivrPackageApiRequest = contsructAxiosInstance({ baseURL: "https://data.jsdelivr.com/v1/package/npm/", url: "" });
 
 export default new Vuex.Store({
   state: {
@@ -27,6 +25,9 @@ export default new Vuex.Store({
   },
 
   getters: {
+    /**
+     * Получить пакеты из кэша
+     */
     getPackagesFromCache(state){
       /**
        * Получить данные пакетов из кэша
@@ -34,8 +35,6 @@ export default new Vuex.Store({
        * @param {Number} page номер страницы
        */
       return function(query, page = 1) {
-        // TODO если запрос пустой, то показать популярные пакеты и указывать это в подсказке
-
         if (!state.searchHistory[query]) {
           /* Если такого запроса не выполнялось */
           return false;
@@ -52,6 +51,12 @@ export default new Vuex.Store({
 
         return []
       }
+    },
+    /**
+     * Получить количество страниц
+     */
+    getPagesAmout(state){
+      return Math.ceil(state.totalFound / state.settings.pageSize);
     }
   },
 
@@ -69,7 +74,6 @@ export default new Vuex.Store({
       state.isPendingResponse = flag
     },
     ADD_SEARCH_HISTORY(state, { query, packages, offset = 0 }){
-      console.log("ADD_SEARCH_HISTORY", { state, query, packages });
       /* Если первый раз */
       if (!state.searchHistory[query]) {
         state.searchHistory[query] = []
@@ -85,9 +89,12 @@ export default new Vuex.Store({
         const packageName = item.package.name;
 
         if (!state.packagesСache[packageName]) {
-          state.packagesСache[packageName] = {
-            timestamp: Date.now()
-          }
+          const newPackage = {
+            timestamp: Date.now(),
+            npm: false,
+            jsdelivr: false
+          };
+          Vue.set(state.packagesСache, packageName, newPackage);
         }
 
         state.packagesСache[packageName].npm = item;
@@ -96,8 +103,11 @@ export default new Vuex.Store({
     UPDATE_PACKAGE_DATA_FROM_NPM(state, data){
       state.packagesСache[data.package.name].npm = data;
     },
-    UPDATE_PACKAGE_DATA_FROM_JSDELIVR(state, data){
-      state.packagesСache[data.package.name].jsdelivr = data;
+    UPDATE_PACKAGE_DATA_FROM_JSDELIVR(state, { data, packageName }){
+      state.packagesСache[packageName].jsdelivr = data;
+    },
+    SET_PAGE(state, page){
+      state.page = page;
     }
   },
 
@@ -106,22 +116,25 @@ export default new Vuex.Store({
      * Подготоаить запрос для получения пакетов
      */
     async searchPackages({ state, commit, dispatch, getters }, { query, page = 1 }){
-      const q = query;
       const from = Math.max((page - 1) * state.settings.pageSize, 0);
       const size = state.settings.pageSize;
-      const request = { q, from, size };
+      const request = { query, from, size };
+
+      if (!query){
+        // TODO Показать популяные
+        console.warn("Empty request");
+        return false;
+      }
 
       /* Если запрос уже был, взять из кэша */
       if (state.searchHistory[query]) {
         /* Проверить наличие записей в кэше */
         const packagesInHistory = state.searchHistory[query].slice(from, from + size);
-        const emptySeries = getEmptySeries(packagesInHistory);
 
         /* Если каких-то нет - получить */
-        if (emptySeries.length) {
-          emptySeries.forEach(async function(series) {
-            await dispatch("searchPackagesInNPM", { q, from: series.start, size: series.length })
-          })
+        const notEmptyItems = packagesInHistory.reduce(total => ++total, 0);
+        if (notEmptyItems < size) {
+          await dispatch("searchPackagesInNPM", request)
         }
       } else {
       /* Если нет, получить из NPM */
@@ -130,8 +143,10 @@ export default new Vuex.Store({
 
       /* Сохранить запрос */
       commit("SET_QUERY", query);
+      /* Расчитать результирую страницу */
+      commit("SET_PAGE", page);
       /* Сформировать результат */
-      commit("UPDATE_SEARCH_RESULT", getters.getPackagesFromCache(request.q, state.page));
+      commit("UPDATE_SEARCH_RESULT", getters.getPackagesFromCache(query, page));
     },
     /**
      * Найти пакеты в NPM
@@ -141,11 +156,9 @@ export default new Vuex.Store({
      * @param {Number} Payload.from Позиция, с которой будут возвращены релультаты
      * @param {Number} Payload.size Количество резльтатов, которое будет возвращено
      */
-    async searchPackagesInNPM({ state, commit, dispatch }, { q, from = 0, size = 0 }){
+    async searchPackagesInNPM({ state, commit, dispatch }, { query, from = 0, size = 0 }){
       const request = {
-        q,
-        from,
-        size: size || state.settings.pageSize
+        q: query, from, size: size || state.settings.pageSize
       }
 
       commit("SET_PENDING_RESPONSE", true);
@@ -161,10 +174,9 @@ export default new Vuex.Store({
               /* Сохранить в кэш */
               commit("ADD_PACKAGES_TO_CACHE", response.data.results);
               /* Сохранить историю */
-              commit("ADD_SEARCH_HISTORY", { packages: response.data.results, query: request.q, offset: request.from });
+              commit("ADD_SEARCH_HISTORY", { packages: response.data.results, query, offset: request.from });
             }
           }
-          console.log("Request success", { request, response });
         })
         /* Неудача */
         .catch(function (error) {
@@ -173,6 +185,28 @@ export default new Vuex.Store({
         /* Устновить флаг об окончании ожидания ответа */
         .then(function() {
           commit("SET_PENDING_RESPONSE", false);
+        })
+    },
+    /**
+     * Найти пакеты в NPM
+     * @param {Object} VuexInstance
+     * @param {Object} Payload
+     * @param {String} Payload.packageName Текст запроса
+     */
+    async searchPackagesInJsdelivr({ state, commit, dispatch, getters }, { packageName, version }){
+      let request = packageName;
+      if (version) request += "@" + version;
+
+      await JsdelivrPackageApiRequest.get(request)
+        /* Успех */
+        .then(function(response) {
+          if (response.status === 200) {
+            commit("UPDATE_PACKAGE_DATA_FROM_JSDELIVR", { data: response.data, packageName })
+          }
+        })
+        /* Неудача */
+        .catch(function (error) {
+          console.error("store:searchPackagesInJsdelivr:error", { request, error })
         })
     }
   }

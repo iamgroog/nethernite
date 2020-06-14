@@ -12,13 +12,11 @@
 </template>
 
 <script>
-// TODO Валидация (только текст)
-// TODO Экранирование
-// TODO Не отправлять пустые значения
-// TODO Показывать кнопку повоторить в подсказке при неудаче
-// TODO Логика через геттер
+
 // TODO Уменьшать поле ввода, если не в фокусе
+
 import { mapState, mapActions } from "vuex"
+import { debounce } from "lodash"
 import filterSearchQuery from "@/script/filterSearchQuery"
 
 export default {
@@ -44,18 +42,9 @@ export default {
       set(query){
         /* Передача запроса и номера страницы в роутер, чтобы сохранять позицию в адресной строке, */
         /* что обеспечивает возможность передчи ссылки на результаты поиска */
-        this.$router.push({
-          name: "TheSearchResults",
-          params: {
-            query: filterSearchQuery(query),
-            page: 1
-          }
-        });
-
-        this.searchPackages({ query });
+        this.setQuery(query);
       }
     },
-
     inputHint(){
       if (!this.totalFound) {
         return "Ничего не найдено"
@@ -66,13 +55,21 @@ export default {
   methods: {
     ...mapActions([
       "searchPackages"
-    ])
-  },
-  created(){
-    const query = this.$router.history.current.params.query;
-    this.searchPackages({ q: query });
+    ]),
+    setQuery: debounce(function(query) {
+      this.$router.push({
+        name: "TheSearchResults",
+        params: {
+          query: filterSearchQuery(query),
+          page: 1
+        }
+      })
+
+      this.searchPackages({ query });
+    }, 500, { maxWait: 1000 })
   }
 }
+
 </script>
 
 <style>

@@ -1,7 +1,7 @@
 /**
  * Определяет серии пустых последовательностей в массиве
  * @param {Array} array Запрос введенный пользователем
- * @returns {Array[start: Number, length: Number]}
+ * @returns {{start: Number, length: Number}[]}
  */
 export default function getEmptySeries(array = []) {
   let previousIndex = -1;
